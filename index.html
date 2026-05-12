@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garden Care Tracker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
+  .top-bar{background:#174262;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .top-bar h1{font-size:17px;font-weight:500}
+  .station-pill{font-size:12px;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:20px;white-space:nowrap}
+  .container{max-width:800px;margin:0 auto;padding:16px}
+  .tabs{display:flex;gap:3px;background:#fff;border-radius:12px;padding:5px;margin-bottom:16px;border:1px solid #e5e5e0;overflow-x:auto}
+  .tab{padding:6px 12px;font-size:12px;cursor:pointer;border:none;background:transparent;color:#666;border-radius:8px;white-space:nowrap;font-family:inherit}
+  .tab.active{background:#174262;color:#fff;font-weight:500}
+  .tab:hover:not(.active){background:#f0f0ea}
+  .weather-box{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #e5e5e0}
+  .weather-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .w-cell{text-align:center}
+  .w-val{font-size:17px;font-weight:500}
+  .w-lbl{font-size:10px;color:#888;margin-top:2px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+  .stat{background:#fff;border-radius:10px;padding:10px;text-align:center;border:1px solid #e5e5e0}
+  .stat-n{font-size:20px;font-weight:500}
+  .stat-l{font-size:11px;color:#888;margin-top:2px}
+  .section-head{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px}
+  .card{background:#fff;border:1px solid #e5e5e0;border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+  .card:hover{border-color:#bbb}
+  .card.border-danger{border-left:3px solid #e24b4a}
+  .card.border-warning{border-left:3px solid #ef9f27}
+  .card.border-success{border-left:3px solid #639922}
+  .card.border-info{border-left:3px solid #378add}
+  .card-head{display:flex;justify-content:space-between;align-items:center}
+  .card-name{font-size:14px;font-weight:500}
+  .card-loc{font-size:12px;color:#888;margin-top:2px}
+  .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+  .badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+  .badge-danger{background:#fcebeb;color:#a32d2d}
+  .badge-warning{background:#faeeda;color:#854f0b}
+  .badge-success{background:#eaf3de;color:#3b6d11}
+  .badge-info{background:#e6f1fb;color:#185fa5}
+  .badge-muted{background:#f1efe8;color:#5f5e5a}
+  .badge-rain{background:#e1f5ee;color:#0f6e56}
+  .expand{display:none;margin-top:10px;border-top:1px solid #f0f0ea;padding-top:10px}
+  .expand.open{display:block}
+  .task-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f0ea;font-size:13px;gap:12px}
+  .task-row:last-child{border-bottom:none}
+  .task-label{color:#888;flex-shrink:0}
+  .task-val{font-weight:500;text-align:right}
+  .info-box{border-radius:8px;padding:8px 10px;margin:6px 0;font-size:12px;border-left:3px solid}
+  .info-box .info-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+  .fert-box{background:#fef9ee;border-color:#c5a24a;color:#6b520d}
+  .fert-box .info-label{color:#8a6d1a}
+  .prune-box{background:#f0f7ee;border-color:#5e9c48;color:#2e5c1e}
+  .prune-box .info-label{color:#3d7a28}
+  .dh-box{background:#f5f0fb;border-color:#8a5cc7;color:#42286e}
+  .dh-box .info-label{color:#6b3fa0}
+  .btn{padding:5px 12px;font-size:12px;border:1px solid #ddd;border-radius:8px;background:transparent;cursor:pointer;margin-top:6px;margin-right:4px;font-family:inherit}
+  .btn:hover{background:#f5f5f0}
+  .btn-primary{background:#174262;color:#fff;border-color:#174262}
+  .btn-primary:hover{background:#0f2f47}
+  .btn-sm{padding:3px 8px;font-size:11px}
+  .search-bar{display:flex;gap:8px;margin-bottom:12px}
+  .search-bar input,.search-bar select{padding:7px 10px;font-size:13px;border:1px solid #e5e5e0;border-radius:8px;background:#f9f9f6;color:#1a1a1a;font-family:inherit}
+  .search-bar input{flex:1}
+  .loc-head{font-size:15px;font-weight:500;margin:1.5rem 0 .5rem;padding-bottom:6px;border-bottom:1px solid #e5e5e0}
+  .checklist{background:#f9f9f6;border-radius:10px;padding:12px 14px;margin-bottom:12px}
+  .check-item{display:flex;align-items:flex-start;gap:10px;padding:5px 0;font-size:13px;color:#666}
+  .check-item input{margin-top:2px;flex-shrink:0;accent-color:#174262}
+  .settings-box{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e5e5e0}
+  .settings-box input{width:100%;padding:8px 10px;font-size:13px;border:1px solid #e5e5e0;border-radius:8px;margin-top:4px;margin-bottom:10px;font-family:inherit;background:#f9f9f6}
+  .settings-box label{font-size:12px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .rain-skip{font-size:12px;color:#0f6e56;background:#e1f5ee;border-radius:6px;padding:6px 10px;margin-top:8px}
+  .error-box{background:#fcebeb;border:1px solid #f09595;border-radius:10px;padding:12px;font-size:13px;color:#a32d2d;margin-bottom:12px}
+  .info-banner{background:#e6f1fb;border:1px solid #b3d4f5;border-radius:10px;padding:12px 14px;font-size:13px;color:#185fa5;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  /* Shopping list */
+  .shop-group{background:#fff;border:1px solid #e5e5e0;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+  .shop-fert{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .shop-plants{font-size:12px;color:#555;line-height:1.7}
+  .shop-badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;background:#faeeda;color:#854f0b}
+  .tab-content{display:none}
+  .tab-content.active{display:block}
+  .arrow{font-size:18px;color:#aaa}
+  .rain-loading{font-size:12px;color:#888;font-style:italic}
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;padding:16px}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+  .modal h2{font-size:16px;font-weight:600;margin-bottom:16px}
+  .modal-field{margin-bottom:12px}
+  .modal-field label{display:block;font-size:12px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+  .modal-field input,.modal-field select,.modal-field textarea{width:100%;padding:8px 10px;font-size:13px;border:1px solid #e5e5e0;border-radius:8px;font-family:inherit;background:#f9f9f6;color:#1a1a1a}
+  .modal-field textarea{resize:vertical;min-height:60px}
+  .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;border-top:1px solid #f0f0ea;padding-top:16px}
+  .btn-delete{padding:3px 8px;font-size:11px;border:1px solid #f0d0d0;border-radius:6px;background:transparent;color:#c04040;cursor:pointer;font-family:inherit;opacity:0.7}
+  .btn-delete:hover{background:#fcebeb;opacity:1}
+  .btn-restore{padding:3px 8px;font-size:11px;border:1px solid #c5d8c0;border-radius:6px;background:transparent;color:#3b6d11;cursor:pointer;font-family:inherit}
+  .btn-restore:hover{background:#eaf3de}
+  .deleted-plant-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0ea;font-size:13px}
+  .deleted-plant-row:last-child{border-bottom:none}
+  .add-plant-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;border:1.5px dashed #c0c0b8;border-radius:10px;background:transparent;cursor:pointer;color:#666;font-family:inherit;width:100%;justify-content:center;margin-bottom:12px}
+  .add-plant-btn:hover{background:#f0f0ea;border-color:#999;color:#333}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>Garden Care Tracker — Hebron, CT (Zone 6a)</h1>
+  <span class="station-pill" id="station-pill">No station connected</span>
+</div>
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('today',event)">Today's Tasks</button>
+    <button class="tab" onclick="showTab('week',event)">This Week</button>
+    <button class="tab" onclick="showTab('all',event)">All Plants</button>
+    <button class="tab" onclick="showTab('loc',event)">By Location</button>
+    <button class="tab" onclick="showTab('settings',event)">Weather Setup</button>
+  </div>
+  <div id="tab-today" class="tab-content active"></div>
+  <div id="tab-week" class="tab-content"></div>
+  <div id="tab-all" class="tab-content"></div>
+  <div id="tab-loc" class="tab-content"></div>
+  <div id="tab-settings" class="tab-content"></div>
+</div>
+<script>
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+const TODAY_STR=TODAY.toISOString().split('T')[0];
+const RAIN_SKIP=0.5,RAIN_LIGHT=0.25;
+
+const SHEET_DATES={
+  bleedingheart:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  astilbe:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  cityline:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  switchgrass:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  'speedwell-back':{w:'2025-07-03',f:'2025-07-05',mg:null},
+  'delphinium-back':{w:'2025-07-03',f:'2025-07-05',mg:null},
+  iris:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  impatiens:{w:'2025-07-03',f:null,mg:'2025-06-27'},
+  geranium:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  columbine:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  'speedwell-front':{w:'2025-07-03',f:'2025-07-05',mg:null},
+  daylily:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  knockout:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  tigerlily:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  lavender:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  spira:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  asianticlily:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  weigela:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  lobelia:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  echinacea:{w:'2025-07-03',f:null,mg:null},
+  canalily:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  'delphinium-cobalt':{w:'2025-07-03',f:'2025-05-26',mg:null},
+  peony:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  'phlox-front2':{w:'2025-07-03',f:'2025-05-26',mg:null},
+  'pink-knockout':{w:'2025-07-03',f:'2025-07-05',mg:null},
+  allium:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  coralbells:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  endlesssummer:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  azalea:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  'hydrangea-front':{w:'2025-07-03',f:null,mg:null},
+  lupine:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  lilac:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  creepingphlox:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  hosta:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  salvia:{w:'2025-07-03',f:'2025-05-26',mg:null},
+  'phlox-meemaw':{w:'2025-07-03',f:'2025-05-26',mg:null},
+  hibiscus:{w:'2025-07-03',f:null,mg:'2025-06-27'},
+  gardenia:{w:'2025-07-03',f:'2025-07-05',mg:null},
+  dipladenia:{w:'2025-07-03',f:null,mg:'2025-06-27'},
+};
+
+const plants=[
+  {id:'bleedingheart',name:'Old Fashioned Bleeding Heart',loc:'Back',wDays:7,fDays:330,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10)',bloom:'April–May',
+   pruneWhen:'Late summer after foliage dies back',deadhead:'N/A'},
+  {id:'astilbe',name:'Astilbe',loc:'Back',wDays:4,fDays:60,mgDays:0,
+   fertType:'10-10-10 — spring and after bloom',bloom:'July–Aug',
+   pruneWhen:'Late summer after foliage dies back',deadhead:'Remove spent flower stalks'},
+  {id:'cityline',name:'Big Leaf Hydrangea (Cityline Paris)',loc:'Back',wDays:4,fDays:90,mgDays:0,
+   fertType:'10-10-10 — early spring and early summer',bloom:'June–Sept',
+   pruneWhen:'Do not prune old wood',deadhead:'Remove faded blooms'},
+  {id:'switchgrass',name:'Shenandoah Switch Grass',loc:'Back',wDays:7,fDays:365,mgDays:0,
+   fertType:'10-10-10',bloom:'Summer',
+   pruneWhen:'Fall — cut to ground after frost',deadhead:null},
+  {id:'speedwell-back',name:'Spike Speedwell Perfectly Picasso',loc:'Back',wDays:7,fDays:365,mgDays:0,
+   fertType:'10-10-10',bloom:'June–Aug',
+   pruneWhen:'Cut back 1–2" in fall',deadhead:'After first flower to encourage 2nd bloom (June)'},
+  {id:'delphinium-back',name:'Black Eyed Angels Delphinium',loc:'Back',wDays:7,fDays:60,mgDays:0,
+   fertType:'10-20-20 (used 10-10-10)',bloom:'June–July',
+   pruneWhen:'Early summer; cut back 1–2" in fall',deadhead:'Remove spent spikes (July)'},
+  {id:'iris',name:'Iris',loc:'Back',wDays:7,fDays:90,mgDays:0,
+   fertType:'5-10-10 — early spring and post bloom (low nitrogen)',bloom:'May–June',
+   pruneWhen:'Remove leaves after flowers fade (early June)',deadhead:'Remove foliage after bloom'},
+  {id:'impatiens',name:'New Guinea Impatiens',loc:'Back',wDays:3,fDays:0,mgDays:14,
+   fertType:'Miracle-Gro every 14 days',bloom:'Summer–Fall',
+   pruneWhen:null,deadhead:'Not needed'},
+  {id:'geranium',name:'Zonal Geranium',loc:'Back',wDays:14,fDays:14,mgDays:0,
+   fertType:'10-10-10',bloom:'Summer',
+   pruneWhen:null,deadhead:'Deadhead spent blooms regularly'},
+  {id:'columbine',name:'Little Lantern Dwarf Columbine',loc:'Back by House',wDays:7,fDays:330,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10)',bloom:'Late April–June',
+   pruneWhen:'Midsummer after bloom',deadhead:'Remove faded flower stems for additional bloom (June)'},
+  {id:'speedwell-front',name:'Speedwell',loc:'Front 1',wDays:7,fDays:365,mgDays:0,
+   fertType:'10-10-10 — early spring',bloom:'June–Aug',
+   pruneWhen:'Cut back in fall',deadhead:'After first flower to encourage 2nd bloom (June)'},
+  {id:'daylily',name:'Daylily',loc:'Front 1',wDays:12,fDays:60,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10) — spring and post bloom',bloom:'June–Aug',
+   pruneWhen:'Fall after blooms fade',deadhead:'Remove spent blooms (August)'},
+  {id:'knockout',name:'Knockout Rose',loc:'Front 1',wDays:4,fDays:30,mgDays:0,
+   fertType:'Rose Fertilizer 11-14-13 (used 10-10-10) — monthly spring–fall',bloom:'May–Frost',
+   pruneWhen:'March–April — prune by 1/3',deadhead:'Just above first 5-leaf pattern (July)'},
+  {id:'tigerlily',name:'Tiger Lily',loc:'Front 1',wDays:7,fDays:365,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10) — spring only',bloom:'July',
+   pruneWhen:'After flowers yellow — do not cut foliage until brown',deadhead:null},
+  {id:'lavender',name:'Lavender',loc:'Front 1',wDays:10,fDays:365,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10)',bloom:'June–July',
+   pruneWhen:'Spring to shape; fall as well',deadhead:'Remove faded flower stems for additional bloom (July)'},
+  {id:'spira',name:'Candy Corn Spira',loc:'Front 1',wDays:7,fDays:365,mgDays:0,
+   fertType:'10-10-10 — early spring',bloom:'June–Sept',
+   pruneWhen:'After flowering',deadhead:'After flowering (July)'},
+  {id:'asianticlily',name:'Tiny Diamond Asiatic Lily',loc:'Front 1',wDays:7,fDays:60,mgDays:0,
+   fertType:'10-10-10 — spring and early summer only',bloom:'June',
+   pruneWhen:'Do not cut foliage until yellow/brown',deadhead:null},
+  {id:'weigela',name:'Crimson Kisses Weigela',loc:'Front 1',wDays:7,fDays:365,mgDays:0,
+   fertType:'10-10-10 — early spring, 1x per year',bloom:'May–June',
+   pruneWhen:'After flowering',deadhead:'After flowering — just above last leaves below spent stalk'},
+  {id:'lobelia',name:'Great Blue Lobelia',loc:'Front 1',wDays:3,fDays:365,mgDays:0,
+   fertType:'10-10-10 — early spring, 1x per year',bloom:'Aug–Sept',
+   pruneWhen:'Cut off stems to prevent self-propagation',deadhead:'After bloom (August)'},
+  {id:'echinacea',name:'Echinacea Color Coded Fuchsia',loc:'Front 1',wDays:10,fDays:0,mgDays:0,
+   fertType:'None — thrives in lean soil',bloom:'July–Sept',
+   pruneWhen:'Cut back to encourage more blooms',deadhead:'Cut back spent blooms to encourage more (July)'},
+  {id:'canalily',name:'Cana Lilies',loc:'Front 1',wDays:3,fDays:30,mgDays:0,
+   fertType:'10-10-10 — monthly during bloom',bloom:'July–Frost',
+   pruneWhen:'Store rhizomes before frost',deadhead:null},
+  {id:'delphinium-cobalt',name:'Cobalt Dreams Delphinium',loc:'Front 1',wDays:7,fDays:60,mgDays:0,
+   fertType:'10-10-10 — spring and midsummer',bloom:'June–July',
+   pruneWhen:'Cut back to encourage 2nd bloom; 1–2" in fall',deadhead:'Yes — deadhead to create 2nd bloom (June–July)'},
+  {id:'peony',name:'Peony',loc:'Front 2',wDays:7,fDays:365,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10) — spring only',bloom:'May–June',
+   pruneWhen:'Fall — cut to ground after frost',deadhead:'Just remove flower head, leave leaves until frost (June)'},
+  {id:'phlox-front2',name:'Phlox',loc:'Front 2',wDays:7,fDays:365,mgDays:0,
+   fertType:'10-10-10 — early spring, 1x per year',bloom:'July–Sept',
+   pruneWhen:'Late winter',deadhead:'As top blooms fade to promote 2nd bloom (June)'},
+  {id:'pink-knockout',name:'Pink Knockout Rose',loc:'Front 2',wDays:4,fDays:30,mgDays:0,
+   fertType:'Rose Fertilizer — monthly spring through fall',bloom:'May–Frost',
+   pruneWhen:'March–April — prune by 1/3',deadhead:'Just above first 5-leaf pattern (July)'},
+  {id:'allium',name:'Ornamental Chives Allium Glovemaster',loc:'Front 2',wDays:7,fDays:330,mgDays:0,
+   fertType:'10-10-10 — early spring',bloom:'May–June',
+   pruneWhen:'Let foliage die back naturally',deadhead:null},
+  {id:'coralbells',name:'Coral Bells',loc:'Front 2',wDays:7,fDays:330,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10) — early spring',bloom:'May–June',
+   pruneWhen:'Early spring cleanup',deadhead:'During summer'},
+  {id:'endlesssummer',name:'Endless Summer Hydrangea',loc:'Front 2/By House',wDays:7,fDays:90,mgDays:0,
+   fertType:'10-10-10 — early spring and early summer',bloom:'June–Sept',
+   pruneWhen:'Less pruning = more blooms',deadhead:'Remove faded blooms (April)'},
+  {id:'azalea',name:'Azalea',loc:'Front by House',wDays:7,fDays:365,mgDays:0,
+   fertType:'15-15-15 — late summer/early fall (acid formula)',bloom:'May',
+   pruneWhen:'Within 3 weeks of finishing bloom — cosmetically only',deadhead:'After bloom (June)'},
+  {id:'hydrangea-front',name:'Big Leaf Hydrangea',loc:'Front by House',wDays:3,fDays:0,mgDays:0,
+   fertType:'None listed',bloom:'June–Sept',
+   pruneWhen:'Late summer after bloom',deadhead:'N/A'},
+  {id:'lupine',name:'Lupine (Popsicle Series)',loc:'Front by House',wDays:10,fDays:330,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10) — light feeding only',bloom:'May–June',
+   pruneWhen:'Late fall when brown',deadhead:'Deadhead spikes (May–June)'},
+  {id:'lilac',name:'Lilac',loc:'Front Center',wDays:7,fDays:330,mgDays:0,
+   fertType:'5-10-10 (used 10-10-10)',bloom:'May',
+   pruneWhen:'Immediately after bloom (June)',deadhead:'Remove spent blooms'},
+  {id:'creepingphlox',name:'Creeping Phlox',loc:'Front Mailbox',wDays:10,fDays:365,mgDays:0,
+   fertType:'10-10-10 — after bloom',bloom:'April–May',
+   pruneWhen:'Shear by 1/3 after bloom',deadhead:'Shear after flowering (June)'},
+  {id:'hosta',name:'Hosta (Stained Glass)',loc:"Grandaddy's Garden",wDays:4,fDays:90,mgDays:0,
+   fertType:'10-10-10 — spring and midsummer',bloom:'July',
+   pruneWhen:'Flower stalks after bloom; leaves as they yellow',deadhead:'Flower stalks after bloom (August)'},
+  {id:'salvia',name:'Salvia Rockin Deep Purple',loc:"Meemaw's Rock",wDays:10,fDays:365,mgDays:0,
+   fertType:'10-10-10 — early spring, 1x per year',bloom:'June–Frost',
+   pruneWhen:'Cut back in spring',deadhead:'Yes — deadhead to extend bloom (July)'},
+  {id:'phlox-meemaw',name:"Phlox (Meemaw's Rock)",loc:"Meemaw's Rock",wDays:7,fDays:365,mgDays:0,
+   fertType:'10-10-10 — early spring, 1x per year',bloom:'July–Sept',
+   pruneWhen:'Late winter',deadhead:'As top blooms fade to promote 2nd (June)'},
+  {id:'hibiscus',name:'Passion Wind Hibiscus',loc:'Pot',wDays:3,fDays:0,mgDays:14,
+   fertType:'Miracle-Gro every 2–3 weeks',bloom:'Summer–Fall',
+   pruneWhen:'Bring indoors before first frost',deadhead:'Yes'},
+  {id:'gardenia',name:'First Love Gardenia',loc:'Back',wDays:3,fDays:42,mgDays:0,
+   fertType:'Azalea fertilizer (acid formula)',bloom:'Summer',
+   pruneWhen:'Early spring',deadhead:'Yes — deadhead to promote additional blooms'},
+  {id:'dipladenia',name:'Dipladenia',loc:'Pot',wDays:3,fDays:0,mgDays:14,
+   fertType:'Miracle-Gro every 2 weeks',bloom:'Summer–Fall',
+   pruneWhen:'Bring indoors before frost',deadhead:null},
+];
+
+function lsGet(k){return localStorage.getItem('garden_'+k);}
+function lsSet(k,v){localStorage.setItem('garden_'+k,v);}
+
+let state={};
+let weather={loaded:false,error:null,daily:0,weekly:0,sevenDay:null,sevenDayLoading:false,lastRain:null,temp:null,humidity:null,stationName:''};
+let awConfig={apiKey:'',appKey:'',macAddress:''};
+let hiddenPlants=new Set();
+let customPlants=[];
+let pendingDelete=new Set();
+
+function getActivePlants(){
+  return [...plants,...customPlants].filter(p=>!hiddenPlants.has(p.id));
+}
+
+function addDays(s,n){const d=new Date(s);d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
+function daysDiff(s){return Math.round((new Date(s)-TODAY)/864e5);}
+function fmtDate(s){
+  if(!s)return'—';
+  const[y,m,d]=s.split('-');
+  const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return`${mo[+m-1]} ${+d}, ${y}`;
+}
+
+function loadState(){
+  awConfig.apiKey=lsGet('aw_apiKey')||'';
+  awConfig.appKey=lsGet('aw_appKey')||'';
+  awConfig.macAddress=lsGet('aw_mac')||'';
+  // Load hidden plant IDs
+  try{hiddenPlants=new Set(JSON.parse(lsGet('hidden_plants')||'[]'));}catch{hiddenPlants=new Set();}
+  // Load custom plants added by user
+  try{customPlants=JSON.parse(lsGet('custom_plants')||'[]');}catch{customPlants=[];}
+  const allP=[...plants,...customPlants];
+  for(const p of allP){
+    const sd=SHEET_DATES[p.id]||{};
+    state[p.id]={
+      lastW:lsGet('w_'+p.id)||sd.w||TODAY_STR,
+      lastF:lsGet('f_'+p.id)||sd.f||null,
+      lastMg:lsGet('mg_'+p.id)||sd.mg||null,
+      wFromSheet:!lsGet('w_'+p.id)&&!!sd.w,
+      fFromSheet:!lsGet('f_'+p.id)&&!!sd.f,
+      mgFromSheet:!lsGet('mg_'+p.id)&&!!sd.mg,
+    };
+  }
+  if(awConfig.apiKey&&awConfig.appKey)fetchWeather();
+  else renderAll();
+}
+
+async function fetchWeather(){
+  weather={loaded:false,error:null,daily:0,weekly:0,sevenDay:null,sevenDayLoading:true,lastRain:null,temp:null,humidity:null,stationName:''};
+  document.getElementById('station-pill').textContent='Connecting...';
+  renderAll();
+  try{
+    const url=`https://rt.ambientweather.net/v1/devices?apiKey=${awConfig.apiKey}&applicationKey=${awConfig.appKey}`;
+    const res=await fetch(url);
+    if(!res.ok)throw new Error(`API error ${res.status}`);
+    const data=await res.json();
+    if(!data||!data.length)throw new Error('No devices found');
+    const device=awConfig.macAddress?(data.find(d=>d.macAddress===awConfig.macAddress)||data[0]):data[0];
+    awConfig.macAddress=device.macAddress;
+    lsSet('aw_mac',device.macAddress);
+    const d=device.lastData||{};
+    weather={
+      loaded:true,error:null,
+      daily:+((d.dailyrainin||0).toFixed(2)),
+      weekly:+((d.weeklyrainin||0).toFixed(2)),
+      sevenDay:null,sevenDayLoading:true,
+      lastRain:d.lastRain?new Date(d.lastRain):null,
+      temp:d.tempf!=null?Math.round(d.tempf):null,
+      humidity:d.humidity!=null?Math.round(d.humidity):null,
+      stationName:(device.info&&device.info.name)?device.info.name:'My Station',
+    };
+    document.getElementById('station-pill').textContent=weather.stationName;
+    renderAll();
+    // Now fetch rolling 7-day rain in background
+    fetch7DayRain(device.macAddress);
+  }catch(e){
+    weather.loaded=true;weather.error=e.message||'Connection failed';weather.sevenDayLoading=false;
+    document.getElementById('station-pill').textContent='Error — check setup';
+    renderAll();
+  }
+}
+
+async function fetch7DayRain(mac){
+  // Fetch one record per day for last 7 days (including today)
+  // Use parallel requests — Ambient Weather API is lenient for personal use
+  const daily={};
+  // Today's rain already known
+  daily[TODAY_STR]=weather.daily;
+
+  const promises=[];
+  for(let i=1;i<7;i++){
+    const d=new Date(TODAY);
+    d.setDate(d.getDate()-i);
+    const endDate=new Date(d);
+    endDate.setHours(23,59,59,999);
+    const dayStr=d.toISOString().split('T')[0];
+    const url=`https://rt.ambientweather.net/v1/devices/${mac}?apiKey=${awConfig.apiKey}&applicationKey=${awConfig.appKey}&limit=1&endDate=${endDate.getTime()}`;
+    promises.push(
+      new Promise(resolve=>setTimeout(()=>{
+        fetch(url).then(r=>r.json())
+          .then(data=>{
+            if(data&&data[0])resolve({day:dayStr,rain:data[0].dailyrainin||0});
+            else resolve({day:dayStr,rain:0});
+          }).catch(()=>resolve({day:dayStr,rain:0}));
+      }, i*350)) // 350ms stagger to respect rate limits
+    );
+  }
+  const results=await Promise.all(promises);
+  results.forEach(r=>{daily[r.day]=r.rain;});
+  weather.sevenDay=+(Object.values(daily).reduce((s,r)=>s+r,0).toFixed(2));
+  weather.sevenDayLoading=false;
+  renderAll();
+}
+
+function taskInfo(last,interval){
+  if(!interval)return{status:'none',days:null,next:null};
+  if(!last)return{status:'unset',days:null,next:null};
+  const next=addDays(last,interval);
+  const d=daysDiff(next);
+  const status=d<0?'overdue':d===0?'today':d<=3?'soon':d<=10?'upcoming':'ok';
+  return{status,days:d,next};
+}
+function badgeCls(s){return s==='overdue'||s==='today'?'badge-danger':s==='soon'?'badge-warning':s==='upcoming'?'badge-info':s==='unset'?'badge-muted':'badge-success';}
+function cardBorder(statuses){
+  if(statuses.some(s=>s==='overdue'||s==='today'))return'border-danger';
+  if(statuses.some(s=>s==='soon'))return'border-warning';
+  if(statuses.some(s=>s==='upcoming'))return'border-info';
+  return'border-success';
+}
+function badgeTxt(info,label){
+  if(info.status==='none')return null;
+  if(info.status==='unset')return`${label}: unset`;
+  if(info.status==='overdue')return`${label}: ${Math.abs(info.days)}d overdue`;
+  if(info.status==='today')return`${label}: due today`;
+  return`${label}: in ${info.days}d`;
+}
+
+// Rain to use for watering suggestions
+function rainAmount(){
+  if(weather.sevenDay!=null)return weather.sevenDay;
+  return weather.weekly; // fallback while loading
+}
+
+function buildCard(p){
+  const s=state[p.id];
+  const wi=taskInfo(s.lastW,p.wDays);
+  const fi=taskInfo(s.lastF,p.fDays);
+  const mi=taskInfo(s.lastMg,p.mgDays);
+  const allStatuses=[wi.status,fi.status,mi.status].filter(x=>x!=='none');
+  const border=cardBorder(allStatuses);
+
+  let badges='';
+  const wt=badgeTxt(wi,'Water');if(wt)badges+=`<span class="badge ${badgeCls(wi.status)}">${wt}</span>`;
+  const ft=badgeTxt(fi,'Fertilize');if(ft)badges+=`<span class="badge ${badgeCls(fi.status)}">${ft}</span>`;
+  const mt=badgeTxt(mi,'Miracle-Gro');if(mt)badges+=`<span class="badge ${badgeCls(mi.status)}">${mt}</span>`;
+
+  const isPot=p.loc==='Pot';
+  if(!isPot&&weather.loaded&&!weather.error&&(wi.status==='overdue'||wi.status==='today'||wi.status==='soon')){
+    const rain=rainAmount();
+    if(rain>=RAIN_SKIP)badges+=`<span class="badge badge-rain">🌧 ${rain}" last 7 days — may skip</span>`;
+    else if(rain>=RAIN_LIGHT)badges+=`<span class="badge badge-rain">🌦 ${rain}" last 7 days — check soil</span>`;
+  }
+
+  const fertBox=(p.fDays||p.mgDays)&&p.fertType
+    ?`<div class="info-box fert-box"><div class="info-label">Fertilizer type</div>${p.fertType}</div>`:'';
+  const pruneBox=p.pruneWhen
+    ?`<div class="info-box prune-box"><div class="info-label">When to prune</div>${p.pruneWhen}</div>`:'';
+  const dhBox=p.deadhead&&p.deadhead!=='N/A'&&p.deadhead!=='Not needed'
+    ?`<div class="info-box dh-box"><div class="info-label">Deadhead</div>${p.deadhead}</div>`:'';
+
+  const wSrc=s.wFromSheet?' <span style="font-size:10px;color:#aaa">(from sheet)</span>':'';
+  const fSrc=s.fFromSheet?' <span style="font-size:10px;color:#aaa">(from sheet)</span>':'';
+  const mSrc=s.mgFromSheet?' <span style="font-size:10px;color:#aaa">(from sheet)</span>':'';
+
+  let det=`<div class="expand" id="exp-${p.id}">`;
+  det+=`<div class="task-row"><span class="task-label">Last watered</span><span class="task-val">${fmtDate(s.lastW)}${wSrc}</span></div>`;
+  det+=`<div class="task-row"><span class="task-label">Next water</span><span class="task-val">${wi.next?fmtDate(wi.next):'—'} <span style="font-weight:400;color:#aaa">(every ${p.wDays}d)</span></span></div>`;
+  if(p.fDays){
+    det+=`<div class="task-row"><span class="task-label">Last fertilized</span><span class="task-val">${fmtDate(s.lastF)}${fSrc}</span></div>`;
+    det+=`<div class="task-row"><span class="task-label">Next fertilizer</span><span class="task-val">${fi.next?fmtDate(fi.next):'—'} <span style="font-weight:400;color:#aaa">(every ${p.fDays}d)</span></span></div>`;
+    det+=fertBox;
+  }
+  if(p.mgDays){
+    det+=`<div class="task-row"><span class="task-label">Last Miracle-Gro</span><span class="task-val">${fmtDate(s.lastMg)}${mSrc}</span></div>`;
+    det+=`<div class="task-row"><span class="task-label">Next Miracle-Gro</span><span class="task-val">${mi.next?fmtDate(mi.next):'—'} <span style="font-weight:400;color:#aaa">(every ${p.mgDays}d)</span></span></div>`;
+    det+=fertBox;
+  }
+  det+=pruneBox+dhBox;
+  if(p.bloom)det+=`<div class="task-row"><span class="task-label">Bloom time</span><span class="task-val">${p.bloom}</span></div>`;
+  const isConfirming=pendingDelete.has(p.id);
+  if(isConfirming){
+    det+=`<div style="margin-top:8px;background:#fcebeb;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span style="font-size:13px;color:#a32d2d">Remove <strong>${p.name}</strong> from tracker?</span>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-sm" onclick="cancelDelete('${p.id}',event)" style="border-color:#ddd">Cancel</button>
+        <button class="btn btn-sm" onclick="confirmDelete('${p.id}',event)" style="background:#e24b4a;color:#fff;border-color:#e24b4a">Yes, remove</button>
+      </div>
+    </div>`;
+  } else {
+    det+=`<div style="margin-top:6px">`;
+    det+=`<button class="btn btn-primary" onclick="markDone('w','${p.id}',event)">Watered today</button>`;
+    if(p.fDays)det+=`<button class="btn" onclick="markDone('f','${p.id}',event)">Fertilized today</button>`;
+    if(p.mgDays)det+=`<button class="btn" onclick="markDone('mg','${p.id}',event)">Miracle-Gro today</button>`;
+    det+=`</div>`;
+  }
+  det+=`</div>`;
+
+  return`<div class="card ${border}">
+    <div class="card-head" onclick="toggleExp('${p.id}')" style="cursor:pointer">
+      <div><div class="card-name">${p.name}</div><div class="card-loc">${p.loc}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn-delete" onclick="deleteP('${p.id}',event)" title="Remove plant">✕</button>
+        <span class="arrow" id="arr-${p.id}" onclick="toggleExp('${p.id}',event)" style="cursor:pointer;padding:4px">›</span>
+      </div>
+    </div>
+    ${badges?`<div class="badges" onclick="toggleExp('${p.id}')" style="cursor:pointer">${badges}</div>`:''}
+    ${det}
+  </div>`;
+}
+
+function weatherBoxHTML(){
+  if(!awConfig.apiKey)return`<div class="weather-box" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#888">No weather station connected</span><button class="btn btn-primary" onclick="showTabByName('settings')">Connect station</button></div>`;
+  if(!weather.loaded)return`<div class="weather-box"><span style="font-size:13px;color:#888">Fetching weather data...</span></div>`;
+  if(weather.error)return`<div class="error-box"><strong>Weather error:</strong> ${weather.error} &nbsp;<button class="btn" onclick="fetchWeather()">Retry</button></div>`;
+  const lastRainStr=weather.lastRain?`Last rain: ${weather.lastRain.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:'';
+  const sevenDayDisplay=weather.sevenDay!=null
+    ?`${weather.sevenDay}"`
+    :weather.sevenDayLoading?'<span class="rain-loading">loading…</span>':'—';
+  const rainForNote=weather.sevenDay!=null?weather.sevenDay:weather.weekly;
+  const rainNote=rainForNote>=RAIN_SKIP
+    ?`<div class="rain-skip">Good rainfall in past 7 days (${rainForNote}") — consider skipping watering for most in-ground plants</div>`
+    :rainForNote>=RAIN_LIGHT
+    ?`<div class="rain-skip">Light rainfall in past 7 days (${rainForNote}") — check soil before watering</div>`:'';
+  const resetBtn=`<div style="margin-top:10px;border-top:1px solid #f0f0ea;padding-top:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <span style="font-size:12px;color:#888">Reset watering for all in-ground plants to today</span>
+    <button class="btn btn-sm" onclick="resetAllWatering()" style="background:#174262;color:#fff;border-color:#174262;white-space:nowrap">🌧 Reset all watering</button>
+  </div>`;
+  return`<div class="weather-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:500">${weather.stationName}</span>
+      <button class="btn btn-sm" onclick="fetchWeather()">Refresh</button>
+    </div>
+    <div class="weather-grid">
+      ${weather.temp!=null?`<div class="w-cell"><div class="w-val">${weather.temp}°F</div><div class="w-lbl">Temperature</div></div>`:''}
+      ${weather.humidity!=null?`<div class="w-cell"><div class="w-val">${weather.humidity}%</div><div class="w-lbl">Humidity</div></div>`:''}
+      <div class="w-cell"><div class="w-val">${weather.daily}"</div><div class="w-lbl">Rain today</div></div>
+      <div class="w-cell"><div class="w-val">${sevenDayDisplay}</div><div class="w-lbl">Rain last 7 days</div></div>
+    </div>
+    ${lastRainStr?`<div style="font-size:12px;color:#888;margin-top:6px">${lastRainStr}</div>`:''}
+    ${rainNote}
+    ${resetBtn}
+  </div>`;
+}
+
+function fertShoppingList(){
+  const groups={};
+  for(const p of getActivePlants()){
+    if(!p.fDays&&!p.mgDays)continue;
+    const s=state[p.id];
+    const fi=taskInfo(s.lastF,p.fDays);
+    const mi=taskInfo(s.lastMg,p.mgDays);
+    const fUrgent=['overdue','today','soon','upcoming'].includes(fi.status);
+    const mUrgent=['overdue','today','soon','upcoming'].includes(mi.status);
+    if(!fUrgent&&!mUrgent)continue;
+    const key=p.fertType||'Unknown';
+    if(!groups[key])groups[key]=[];
+    const status=fi.status!=='none'?fi.status:mi.status;
+    const days=fi.days!=null?fi.days:mi.days;
+    groups[key].push({name:p.name,status,days});
+  }
+  if(!Object.keys(groups).length)return`<div style="text-align:center;padding:1rem;color:#888;font-size:13px">No fertilizer needed in the next 10 days.</div>`;
+  let h='';
+  for(const [fert,items] of Object.entries(groups)){
+    const hasOverdue=items.some(i=>i.status==='overdue'||i.status==='today');
+    const hasSoon=items.some(i=>i.status==='soon'||i.status==='upcoming');
+    const urgencyBadge=hasOverdue
+      ?`<span class="shop-badge" style="background:#fcebeb;color:#a32d2d">Overdue/Due</span>`
+      :hasSoon?`<span class="shop-badge">Coming up</span>`:'';
+    h+=`<div class="shop-group">
+      <div class="shop-fert">🌱 ${fert} ${urgencyBadge}</div>
+      <div class="shop-plants">${items.map(i=>{
+        const label=i.status==='overdue'?` <span style="color:#a32d2d;font-size:11px">(${Math.abs(i.days)}d overdue)</span>`
+          :i.status==='today'?' <span style="color:#a32d2d;font-size:11px">(due today)</span>'
+          :i.days!=null?` <span style="color:#888;font-size:11px">(in ${i.days}d)</span>`:'';
+        return`${i.name}${label}`;
+      }).join('<br>')}</div>
+    </div>`;
+  }
+  return h;
+}
+
+function resetAllWatering(){
+  const isPot = p => p.loc === 'Pot';
+  const eligible = getActivePlants().filter(p => !isPot(p));
+  eligible.forEach(p => {
+    state[p.id].lastW = TODAY_STR;
+    state[p.id].wFromSheet = false;
+    lsSet('w_'+p.id, TODAY_STR);
+  });
+  showToast(`✓ Watering reset for ${eligible.length} in-ground plants`);
+  renderAll();
+}
+
+function toggleExp(id,ev){
+  if(ev)ev.stopPropagation();
+  const e=document.getElementById('exp-'+id),a=document.getElementById('arr-'+id);
+  if(!e)return;
+  e.classList.toggle('open');
+  if(a)a.textContent=e.classList.contains('open')?'˅':'›';
+}
+function markDone(type,id,ev){
+  ev&&ev.stopPropagation();
+  if(type==='w'){state[id].lastW=TODAY_STR;state[id].wFromSheet=false;lsSet('w_'+id,TODAY_STR);}
+  else if(type==='f'){state[id].lastF=TODAY_STR;state[id].fFromSheet=false;lsSet('f_'+id,TODAY_STR);}
+  else if(type==='mg'){state[id].lastMg=TODAY_STR;state[id].mgFromSheet=false;lsSet('mg_'+id,TODAY_STR);}
+  renderAll();
+  setTimeout(()=>{const e=document.getElementById('exp-'+id);if(e)e.classList.add('open');const a=document.getElementById('arr-'+id);if(a)a.textContent='˅';},10);
+}
+
+function deleteP(id,ev){
+  ev&&ev.stopPropagation();
+  pendingDelete.add(id);
+  renderAll();
+  // Auto-open the card to show the confirm prompt
+  setTimeout(()=>{
+    const e=document.getElementById('exp-'+id);
+    if(e)e.classList.add('open');
+    const a=document.getElementById('arr-'+id);
+    if(a)a.textContent='˅';
+  },10);
+}
+function confirmDelete(id){
+  pendingDelete.delete(id);
+  hiddenPlants.add(id);
+  lsSet('hidden_plants',JSON.stringify([...hiddenPlants]));
+  const p=[...plants,...customPlants].find(x=>x.id===id);
+  showToast(`${p?p.name:'Plant'} removed — restore it in Settings`);
+  renderAll();
+}
+function cancelDelete(id){
+  pendingDelete.delete(id);
+  renderAll();
+}
+
+function restoreP(id){
+  hiddenPlants.delete(id);
+  lsSet('hidden_plants',JSON.stringify([...hiddenPlants]));
+  const p=[...plants,...customPlants].find(x=>x.id===id);
+  showToast(`${p?p.name:'Plant'} restored`);
+  renderAll();
+}
+
+function showAddModal(){
+  document.getElementById('add-modal').classList.add('open');
+  document.getElementById('m-name').focus();
+}
+function closeModal(){
+  document.getElementById('add-modal').classList.remove('open');
+}
+
+function saveNewPlant(){
+  const name=document.getElementById('m-name').value.trim();
+  if(!name){alert('Please enter a plant name.');return;}
+  const locSel=document.getElementById('m-loc').value;
+  const locCustom=document.getElementById('m-loc-custom').value.trim();
+  const loc=locSel==='Other'?locCustom:locSel||locCustom||'Other';
+  const id='custom_'+Date.now();
+  const p={
+    id,name,loc,
+    wDays:parseInt(document.getElementById('m-wdays').value)||7,
+    fDays:parseInt(document.getElementById('m-fdays').value)||0,
+    mgDays:parseInt(document.getElementById('m-mgdays').value)||0,
+    fertType:document.getElementById('m-ferttype').value.trim()||null,
+    bloom:document.getElementById('m-bloom').value.trim()||null,
+    pruneWhen:document.getElementById('m-prune').value.trim()||null,
+    deadhead:document.getElementById('m-deadhead').value.trim()||null,
+    notes:document.getElementById('m-notes').value.trim()||null,
+    isCustom:true,
+  };
+  customPlants.push(p);
+  state[id]={lastW:TODAY_STR,lastF:null,lastMg:null,wFromSheet:false,fFromSheet:false,mgFromSheet:false};
+  lsSet('custom_plants',JSON.stringify(customPlants));
+  closeModal();
+  showToast(`${name} added to your tracker`);
+  renderAll();
+}
+
+function showToast(msg){
+  const existing=document.getElementById('reset-toast');
+  if(existing)existing.remove();
+  const t=document.createElement('div');
+  t.id='reset-toast';
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#174262;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:500;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.2);white-space:nowrap';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+function renderAll(){renderToday();renderWeek();renderAllPlants();renderLoc();renderSettings();}
+
+function renderToday(){
+  const el=document.getElementById('tab-today');
+  const activePlants=getActivePlants();
+  const ov=activePlants.filter(p=>{const s=state[p.id];return[taskInfo(s.lastW,p.wDays),taskInfo(s.lastF,p.fDays),taskInfo(s.lastMg,p.mgDays)].some(t=>t.status==='overdue');});
+  const ts=activePlants.filter(p=>{const s=state[p.id];return[taskInfo(s.lastW,p.wDays),taskInfo(s.lastF,p.fDays),taskInfo(s.lastMg,p.mgDays)].some(t=>t.status==='today'||t.status==='soon');});
+  let h=weatherBoxHTML();
+  h+=`<div class="stats">
+    <div class="stat"><div class="stat-n" style="color:#e24b4a">${ov.length}</div><div class="stat-l">Overdue</div></div>
+    <div class="stat"><div class="stat-n" style="color:#ba7517">${ts.length}</div><div class="stat-l">Due soon</div></div>
+    <div class="stat"><div class="stat-n">${activePlants.length}</div><div class="stat-l">Total plants</div></div>
+    <div class="stat"><div class="stat-n" style="color:#3b6d11">${activePlants.length-ov.length-ts.length}</div><div class="stat-l">All good</div></div>
+  </div>`;
+  if(ov.length){h+=`<div class="section-head">Overdue</div>`;ov.forEach(p=>{h+=buildCard(p);});}
+  if(ts.length){h+=`<div class="section-head">Due today or within 3 days</div>`;ts.forEach(p=>{h+=buildCard(p);});}
+  if(!ov.length&&!ts.length)h+=`<div style="text-align:center;padding:2rem;color:#888;font-size:14px">All plants are up to date!</div>`;
+  h+=`<div class="section-head">🛒 Fertilizer shopping list <span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0">(overdue + next 10 days)</span></div>`;
+  h+=fertShoppingList();
+  h+=`<div class="section-head">Zone 6a spring checklist</div><div class="checklist">
+    <div class="check-item"><input type="checkbox"> Last frost ~April 15–30 — hold tender annuals (Hibiscus, Dipladenia) until nights stay above 50°F</div>
+    <div class="check-item"><input type="checkbox"> Apply deer & rabbit repellent before new growth emerges</div>
+    <div class="check-item"><input type="checkbox"> Creeping Phlox blooming now (~April 20) — shear after flowers fade</div>
+    <div class="check-item"><input type="checkbox"> Columbine blooms ~April 24 — watch for first flowers</div>
+    <div class="check-item"><input type="checkbox"> Spring fertilizer due NOW for most perennials (see above)</div>
+    <div class="check-item"><input type="checkbox"> Lilac, Allium & Lupine bloom in May — fertilize before bud set</div>
+    <div class="check-item"><input type="checkbox"> Support rings/stakes for Peonies and Delphiniums before they get tall</div>
+    <div class="check-item"><input type="checkbox"> Prune Knockout Roses by 1/3 if not done yet</div>
+  </div>`;
+  el.innerHTML=h;
+}
+
+function renderWeek(){
+  const el=document.getElementById('tab-week');
+  const up=getActivePlants().filter(p=>{const s=state[p.id];return[taskInfo(s.lastW,p.wDays),taskInfo(s.lastF,p.fDays),taskInfo(s.lastMg,p.mgDays)].some(t=>t.status==='upcoming');});
+  let h=weatherBoxHTML();
+  if(up.length){h+=`<div class="section-head">Due in 4–10 days</div>`;up.forEach(p=>{h+=buildCard(p);});}
+  else h+=`<div style="text-align:center;padding:2rem;color:#888;font-size:14px">Nothing coming up this week.</div>`;
+  el.innerHTML=h;
+}
+
+let filterText='',filterLoc='All';
+function renderAllPlants(){
+  const el=document.getElementById('tab-all');
+  const active=getActivePlants();
+  const locs=[...new Set(active.map(p=>p.loc))].sort();
+  let h=`<button class="add-plant-btn" onclick="showAddModal()">＋ Add a plant</button>`;
+  h+=`<div class="search-bar">
+    <input type="text" placeholder="Search plants..." value="${filterText}" oninput="filterText=this.value;renderAllPlants()">
+    <select onchange="filterLoc=this.value;renderAllPlants()">
+      <option value="All">All locations</option>
+      ${locs.map(l=>`<option value="${l}"${l===filterLoc?' selected':''}>${l}</option>`).join('')}
+    </select>
+  </div>`;
+  const fp=active.filter(p=>(!filterText||p.name.toLowerCase().includes(filterText.toLowerCase()))&&(filterLoc==='All'||p.loc===filterLoc));
+  fp.length?fp.forEach(p=>{h+=buildCard(p);}):h+=`<div style="padding:2rem;text-align:center;color:#888">No plants match.</div>`;
+  el.innerHTML=h;
+}
+
+function renderLoc(){
+  const el=document.getElementById('tab-loc');
+  const active=getActivePlants();
+  const locs=[...new Set(active.map(p=>p.loc))].sort();
+  let h=`<button class="add-plant-btn" onclick="showAddModal()">＋ Add a plant</button>`;
+  locs.forEach(loc=>{
+    const g=active.filter(p=>p.loc===loc);
+    h+=`<div class="loc-head">${loc} <span style="font-size:13px;font-weight:400;color:#888">(${g.length})</span></div>`;
+    g.forEach(p=>{h+=buildCard(p);});
+  });
+  el.innerHTML=h;
+}
+
+function renderSettings(){
+  const el=document.getElementById('tab-settings');
+  el.innerHTML=`<div style="padding-top:4px">
+    <div class="section-head">Ambient Weather Network</div>
+    <div class="settings-box">
+      <p style="font-size:13px;color:#666;margin-bottom:12px">Get your keys at <a href="https://ambientweather.net" target="_blank" style="color:#174262">ambientweather.net</a> → My Account → API Keys.</p>
+      <label>API Key</label>
+      <input type="text" id="inp-apikey" placeholder="Paste your API key..." value="${awConfig.apiKey}">
+      <label>Application Key</label>
+      <input type="text" id="inp-appkey" placeholder="Paste your Application key..." value="${awConfig.appKey}">
+      <label>Station MAC Address <span style="font-weight:400;text-transform:none">(optional — auto-detected if blank)</span></label>
+      <input type="text" id="inp-mac" placeholder="e.g. 00:11:22:33:44:55" value="${awConfig.macAddress}">
+      <button class="btn btn-primary" onclick="saveAndConnect()">Save & connect</button>
+      ${awConfig.apiKey?`<button class="btn" onclick="clearWeatherConfig()" style="margin-left:4px">Disconnect</button>`:''}
+    </div>
+    <div class="section-head">How rain affects watering</div>
+    <div class="checklist">
+      <div class="check-item" style="display:block;padding:6px 0"><strong style="color:#1a1a1a">0.5"+ in last 7 days</strong><div style="margin-top:2px">Green "may skip" badge on due plants. In-ground plants likely fine. Pots always need manual watering.</div></div>
+      <div class="check-item" style="display:block;padding:6px 0"><strong style="color:#1a1a1a">0.25"–0.49" in last 7 days</strong><div style="margin-top:2px">Light rain badge — check soil before watering.</div></div>
+      <div class="check-item" style="display:block;padding:6px 0"><strong style="color:#1a1a1a">7-day rain</strong><div style="margin-top:2px">Loads in background by fetching 6 daily history records from your station (takes ~2–3 seconds). Falls back to calendar-week rain while loading.</div></div>
+    </div>
+  </div>`;
+}
+
+function saveAndConnect(){
+  awConfig.apiKey=document.getElementById('inp-apikey').value.trim();
+  awConfig.appKey=document.getElementById('inp-appkey').value.trim();
+  awConfig.macAddress=document.getElementById('inp-mac').value.trim();
+  lsSet('aw_apiKey',awConfig.apiKey);lsSet('aw_appKey',awConfig.appKey);lsSet('aw_mac',awConfig.macAddress);
+  if(awConfig.apiKey&&awConfig.appKey)fetchWeather();else renderAll();
+}
+function clearWeatherConfig(){
+  awConfig={apiKey:'',appKey:'',macAddress:''};
+  ['aw_apiKey','aw_appKey','aw_mac'].forEach(k=>localStorage.removeItem('garden_'+k));
+  weather={loaded:false,error:null,daily:0,weekly:0,sevenDay:null,sevenDayLoading:false,lastRain:null,temp:null,humidity:null,stationName:''};
+  document.getElementById('station-pill').textContent='No station connected';
+  renderAll();
+}
+function showTab(name,ev){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(ev&&ev.target)ev.target.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+function showTabByName(name){
+  const tabs=document.querySelectorAll('.tab');
+  const map={today:0,week:1,all:2,loc:3,settings:4};
+  tabs.forEach(t=>t.classList.remove('active'));
+  if(map[name]!==undefined)tabs[map[name]].classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+loadState();
+</script>
+
+<!-- Add Plant Modal -->
+<div class="modal-overlay" id="add-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>Add a plant</h2>
+    <div class="modal-field"><label>Plant name *</label><input type="text" id="m-name" placeholder="e.g. Black-eyed Susan"></div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Location *</label>
+        <select id="m-loc">
+          <option value="">Select or type below</option>
+          <option>Back</option><option>Back by House</option><option>Front 1</option>
+          <option>Front 2</option><option>Front by House</option><option>Front Center</option>
+          <option>Front Mailbox</option><option>Grandaddy's Garden</option>
+          <option>Meemaw's Rock</option><option>Pot</option><option>Other</option>
+        </select>
+      </div>
+      <div class="modal-field"><label>Custom location</label><input type="text" id="m-loc-custom" placeholder="If 'Other' above"></div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Water every (days)</label><input type="number" id="m-wdays" min="1" max="30" value="7"></div>
+      <div class="modal-field"><label>Fertilize every (days, 0=none)</label><input type="number" id="m-fdays" min="0" max="365" value="0"></div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Miracle-Gro every (days, 0=none)</label><input type="number" id="m-mgdays" min="0" max="60" value="0"></div>
+      <div class="modal-field"><label>Bloom time</label><input type="text" id="m-bloom" placeholder="e.g. June–Aug"></div>
+    </div>
+    <div class="modal-field"><label>Fertilizer type</label><input type="text" id="m-ferttype" placeholder="e.g. 10-10-10 — spring"></div>
+    <div class="modal-field"><label>When to prune</label><input type="text" id="m-prune" placeholder="e.g. After flowering"></div>
+    <div class="modal-field"><label>Deadhead</label><input type="text" id="m-deadhead" placeholder="e.g. Remove spent blooms weekly"></div>
+    <div class="modal-field"><label>Notes</label><textarea id="m-notes" placeholder="Any other care notes..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewPlant()">Add plant</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
