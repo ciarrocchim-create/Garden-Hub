@@ -298,7 +298,6 @@ let weather={loaded:false,error:null,daily:0,weekly:0,sevenDay:null,sevenDayLoad
 let awConfig={apiKey:'',appKey:'',macAddress:''};
 let hiddenPlants=new Set();
 let customPlants=[];
-let pendingDelete=new Set();
 
 function getActivePlants(){
   return [...plants,...customPlants].filter(p=>!hiddenPlants.has(p.id));
@@ -479,22 +478,11 @@ function buildCard(p){
   }
   det+=pruneBox+dhBox;
   if(p.bloom)det+=`<div class="task-row"><span class="task-label">Bloom time</span><span class="task-val">${p.bloom}</span></div>`;
-  const isConfirming=pendingDelete.has(p.id);
-  if(isConfirming){
-    det+=`<div style="margin-top:8px;background:#fcebeb;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <span style="font-size:13px;color:#a32d2d">Remove <strong>${p.name}</strong> from tracker?</span>
-      <div style="display:flex;gap:6px;flex-shrink:0">
-        <button class="btn btn-sm" onclick="cancelDelete('${p.id}',event)" style="border-color:#ddd">Cancel</button>
-        <button class="btn btn-sm" onclick="confirmDelete('${p.id}',event)" style="background:#e24b4a;color:#fff;border-color:#e24b4a">Yes, remove</button>
-      </div>
-    </div>`;
-  } else {
-    det+=`<div style="margin-top:6px">`;
-    det+=`<button class="btn btn-primary" onclick="markDone('w','${p.id}',event)">Watered today</button>`;
-    if(p.fDays)det+=`<button class="btn" onclick="markDone('f','${p.id}',event)">Fertilized today</button>`;
-    if(p.mgDays)det+=`<button class="btn" onclick="markDone('mg','${p.id}',event)">Miracle-Gro today</button>`;
-    det+=`</div>`;
-  }
+  det+=`<div style="margin-top:6px">`;
+  det+=`<button class="btn btn-primary" onclick="markDone('w','${p.id}',event)">Watered today</button>`;
+  if(p.fDays)det+=`<button class="btn" onclick="markDone('f','${p.id}',event)">Fertilized today</button>`;
+  if(p.mgDays)det+=`<button class="btn" onclick="markDone('mg','${p.id}',event)">Miracle-Gro today</button>`;
+  det+=`</div>`;
   det+=`</div>`;
 
   return`<div class="card ${border}">
@@ -611,27 +599,48 @@ function markDone(type,id,ev){
 
 function deleteP(id,ev){
   ev&&ev.stopPropagation();
-  pendingDelete.add(id);
-  renderAll();
-  // Auto-open the card to show the confirm prompt
-  setTimeout(()=>{
-    const e=document.getElementById('exp-'+id);
-    if(e)e.classList.add('open');
-    const a=document.getElementById('arr-'+id);
-    if(a)a.textContent='˅';
-  },10);
+  // Find THIS specific card via the event target — avoids ID collision across tabs
+  const cardEl=ev&&ev.target.closest('.card');
+  if(!cardEl)return;
+  const expEl=cardEl.querySelector('.expand');
+  if(!expEl)return;
+  const p=getActivePlants().find(x=>x.id===id);
+  if(!p)return;
+  // Inject confirm prompt directly into this card's expand (idempotent)
+  const cid='cdel-'+id;
+  if(!cardEl.querySelector('#'+cid)){
+    const div=document.createElement('div');
+    div.id=cid;
+    div.style.cssText='margin-top:8px;background:#fcebeb;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap';
+    div.innerHTML=`<span style="font-size:13px;color:#a32d2d">Remove <strong>${p.name}</strong> from tracker?</span>`+
+      `<div style="display:flex;gap:6px;flex-shrink:0">`+
+      `<button class="btn btn-sm" onclick="cancelDel(event)">Cancel</button>`+
+      `<button class="btn btn-sm" onclick="confirmDel('${id}',event)" style="background:#e24b4a;color:#fff;border-color:#e24b4a">Yes, remove</button>`+
+      `</div>`;
+    expEl.appendChild(div);
+  }
+  expEl.classList.add('open');
+  const arr=cardEl.querySelector('.arrow');
+  if(arr)arr.textContent='˅';
 }
-function confirmDelete(id){
-  pendingDelete.delete(id);
+function confirmDel(id,ev){
+  ev&&ev.stopPropagation();
   hiddenPlants.add(id);
   lsSet('hidden_plants',JSON.stringify([...hiddenPlants]));
   const p=[...plants,...customPlants].find(x=>x.id===id);
-  showToast(`${p?p.name:'Plant'} removed — restore it in Settings`);
-  renderAll();
+  // Remove every instance of this card across all tabs
+  document.querySelectorAll('.card').forEach(c=>{
+    if(c.querySelector(`[onclick*="deleteP('${id}'"]`)||c.querySelector(`#cdel-${id}`))c.remove();
+  });
+  showToast(`${p?p.name:'Plant'} removed — restore in Settings`);
+  renderSettings();
 }
-function cancelDelete(id){
-  pendingDelete.delete(id);
-  renderAll();
+function cancelDel(ev){
+  ev&&ev.stopPropagation();
+  const div=ev.target.closest('[id^="cdel-"]');
+  if(div)div.remove();
+  const expEl=ev.target.closest('.expand');
+  if(expEl){expEl.classList.remove('open');const arr=expEl.closest('.card')&&expEl.closest('.card').querySelector('.arrow');if(arr)arr.textContent='›';}
 }
 
 function restoreP(id){
