@@ -168,6 +168,10 @@ const SHEET_DATES={
   hibiscus:{w:'2025-07-03',f:null,mg:'2025-06-27'},
   gardenia:{w:'2025-07-03',f:'2025-07-05',mg:null},
   dipladenia:{w:'2025-07-03',f:null,mg:'2025-06-27'},
+  blackeyedsusan:{w:null,f:null,mg:null},
+  daisies:{w:null,f:null,mg:null},
+  coreopsis:{w:null,f:null,mg:null},
+  catmint:{w:null,f:null,mg:null},
 };
 
 const plants=[
@@ -288,6 +292,19 @@ const plants=[
   {id:'dipladenia',name:'Dipladenia',loc:'Pot',wDays:3,fDays:0,mgDays:14,
    fertType:'Miracle-Gro every 2 weeks',bloom:'Summer–Fall',
    pruneWhen:'Bring indoors before frost',deadhead:null},
+  {id:'blackeyedsusan',name:'Black-eyed Susan',loc:'Front 1',wDays:7,fDays:365,mgDays:0,
+   fertType:'Light 10-10-10 in spring (or skip — prefers lean soil)',bloom:'July–Sept',
+   pruneWhen:'Cut back in fall, or leave seed heads for birds',deadhead:'Yes — deadhead to extend bloom through summer'},
+  {id:'daisies',name:'Shasta Daisy',loc:'Front 2',wDays:7,fDays:60,mgDays:0,
+   fertType:'10-10-10 — spring and after first bloom',bloom:'June–Aug',
+   pruneWhen:'Divide every 2–93 years in spring or fall',deadhead:'Yes — deadhead regularly to promote continuous bloom'},
+  {id:'coreopsis',name:'Lanceleaf Coreopsis',loc:'Front 1',wDays:10,fDays:365,mgDays:0,
+   fertType:'10-10-10 — early spring (drought tolerant once established)',bloom:'June–Aug',
+   pruneWhen:'Cut back in fall after frost',deadhead:'Pinch or cut off faded flowers and stalks throughout the season'},
+  {id:'catmint',name:"Cat's Meow Catmint",loc:'Front 1',wDays:10,fDays:30,mgDays:0,
+   fertType:"Light 10-10-10 — spring (prefers lean soil, don't over-feed)",bloom:'May–Sept',
+   pruneWhen:"Shear flower spikes to base after first flush; divide clumps every 3–4 years in spring",
+   deadhead:"Shear back hard after first major bloom flush to encourage continuous rebloom through fall"},
 ];
 
 function lsGet(k){return localStorage.getItem('garden_'+k);}
@@ -463,7 +480,7 @@ function buildCard(p){
   const fSrc=s.fFromSheet?' <span style="font-size:10px;color:#aaa">(from sheet)</span>':'';
   const mSrc=s.mgFromSheet?' <span style="font-size:10px;color:#aaa">(from sheet)</span>':'';
 
-  let det=`<div class="expand" id="exp-${p.id}">`;
+  let det=`<div class="expand">`;
   det+=`<div class="task-row"><span class="task-label">Last watered</span><span class="task-val">${fmtDate(s.lastW)}${wSrc}</span></div>`;
   det+=`<div class="task-row"><span class="task-label">Next water</span><span class="task-val">${wi.next?fmtDate(wi.next):'—'} <span style="font-weight:400;color:#aaa">(every ${p.wDays}d)</span></span></div>`;
   if(p.fDays){
@@ -485,15 +502,15 @@ function buildCard(p){
   det+=`</div>`;
   det+=`</div>`;
 
-  return`<div class="card ${border}">
-    <div class="card-head" onclick="toggleExp('${p.id}')" style="cursor:pointer">
+  return`<div class="card ${border}" data-plant-id="${p.id}">
+    <div class="card-head" onclick="toggleExp(event)" style="cursor:pointer">
       <div><div class="card-name">${p.name}</div><div class="card-loc">${p.loc}</div></div>
       <div style="display:flex;align-items:center;gap:8px">
         <button class="btn-delete" onclick="deleteP('${p.id}',event)" title="Remove plant">✕</button>
-        <span class="arrow" id="arr-${p.id}" onclick="toggleExp('${p.id}',event)" style="cursor:pointer;padding:4px">›</span>
+        <span class="arrow" onclick="toggleExp(event)" style="cursor:pointer;padding:4px;font-size:18px;color:#aaa">›</span>
       </div>
     </div>
-    ${badges?`<div class="badges" onclick="toggleExp('${p.id}')" style="cursor:pointer">${badges}</div>`:''}
+    ${badges?`<div class="badges" onclick="toggleExp(event)" style="cursor:pointer">${badges}</div>`:''}
     ${det}
   </div>`;
 }
@@ -581,12 +598,15 @@ function resetAllWatering(){
   renderAll();
 }
 
-function toggleExp(id,ev){
+function toggleExp(ev){
   if(ev)ev.stopPropagation();
-  const e=document.getElementById('exp-'+id),a=document.getElementById('arr-'+id);
-  if(!e)return;
-  e.classList.toggle('open');
-  if(a)a.textContent=e.classList.contains('open')?'˅':'›';
+  const cardEl=ev&&ev.target?ev.target.closest('.card'):null;
+  if(!cardEl)return;
+  const expEl=cardEl.querySelector('.expand');
+  const arrEl=cardEl.querySelector('.arrow');
+  if(!expEl)return;
+  expEl.classList.toggle('open');
+  if(arrEl)arrEl.textContent=expEl.classList.contains('open')?'˅':'›';
 }
 function markDone(type,id,ev){
   ev&&ev.stopPropagation();
@@ -594,7 +614,17 @@ function markDone(type,id,ev){
   else if(type==='f'){state[id].lastF=TODAY_STR;state[id].fFromSheet=false;lsSet('f_'+id,TODAY_STR);}
   else if(type==='mg'){state[id].lastMg=TODAY_STR;state[id].mgFromSheet=false;lsSet('mg_'+id,TODAY_STR);}
   renderAll();
-  setTimeout(()=>{const e=document.getElementById('exp-'+id);if(e)e.classList.add('open');const a=document.getElementById('arr-'+id);if(a)a.textContent='˅';},10);
+  // Reopen the card in whichever tab is currently active (avoids ID collision)
+  setTimeout(()=>{
+    const activeTab=document.querySelector('.tab-content.active');
+    if(!activeTab)return;
+    const card=activeTab.querySelector(`.card[data-plant-id="${id}"]`);
+    if(!card)return;
+    const exp=card.querySelector('.expand');
+    const arr=card.querySelector('.arrow');
+    if(exp)exp.classList.add('open');
+    if(arr)arr.textContent='˅';
+  },10);
 }
 
 function deleteP(id,ev){
@@ -743,7 +773,7 @@ function renderAllPlants(){
   const el=document.getElementById('tab-all');
   const active=getActivePlants();
   const locs=[...new Set(active.map(p=>p.loc))].sort();
-  let h=`<button class="add-plant-btn" onclick="showAddModal()">＋ Add a plant</button>`;
+  let h=``;
   h+=`<div class="search-bar">
     <input type="text" placeholder="Search plants..." value="${filterText}" oninput="filterText=this.value;renderAllPlants()">
     <select onchange="filterLoc=this.value;renderAllPlants()">
@@ -760,7 +790,7 @@ function renderLoc(){
   const el=document.getElementById('tab-loc');
   const active=getActivePlants();
   const locs=[...new Set(active.map(p=>p.loc))].sort();
-  let h=`<button class="add-plant-btn" onclick="showAddModal()">＋ Add a plant</button>`;
+  let h=``;
   locs.forEach(loc=>{
     const g=active.filter(p=>p.loc===loc);
     h+=`<div class="loc-head">${loc} <span style="font-size:13px;font-weight:400;color:#888">(${g.length})</span></div>`;
