@@ -576,9 +576,18 @@ function weatherBoxHTML(){
     ?`<div class="rain-skip">Good rainfall in past 7 days (${rainForNote}") — consider skipping watering for most in-ground plants</div>`
     :rainForNote>=RAIN_LIGHT
     ?`<div class="rain-skip">Light rainfall in past 7 days (${rainForNote}") — check soil before watering</div>`:'';
-  const resetBtn=`<div style="margin-top:10px;border-top:1px solid #f0f0ea;padding-top:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <span style="font-size:12px;color:#888">Reset watering for all in-ground plants to today</span>
-    <button class="btn btn-sm" onclick="resetAllWatering()" style="background:#174262;color:#fff;border-color:#174262;white-space:nowrap">🌧 Reset all watering</button>
+  const resetBtn=`<div style="margin-top:10px;border-top:1px solid #f0f0ea;padding-top:10px;display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span style="font-size:12px;color:#888">Reset watering for all in-ground plants to today</span>
+      <button class="btn btn-sm" onclick="resetAllWatering()" style="background:#174262;color:#fff;border-color:#174262;white-space:nowrap">🌧 Reset all watering</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding-top:8px;border-top:1px solid #f0f0ea">
+      <span style="font-size:12px;color:#888">Apply fertilizer to all plants (Miracle-Gro + 10-10-10)</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="date" id="mg-all-date" value="${TODAY_STR}" max="${TODAY_STR}" onclick="event.stopPropagation()" style="font-size:12px;padding:4px 6px;border:1px solid #e5e5e0;border-radius:7px;background:#f9f9f6;font-family:inherit">
+        <button class="btn btn-sm" onclick="resetAllMG()" style="background:#0f6e56;color:#fff;border-color:#0f6e56;white-space:nowrap">🌿 Apply all fertilizer</button>
+      </div>
+    </div>
   </div>`;
   return`<div class="weather-box">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -643,6 +652,21 @@ function resetAllWatering(){
     lsSet('w_'+p.id, TODAY_STR);
   });
   showToast(`✓ Watering reset for ${eligible.length} in-ground plants`);
+  renderAll();
+}
+
+function resetAllMG(){
+  const dateInp=document.getElementById('mg-all-date');
+  const dateStr=dateInp?dateInp.value:TODAY_STR;
+  if(!dateStr){showToast('Please pick a date first');return;}
+  const eligible=getActivePlants().filter(p=>p.mgDays>0||p.fDays>0);
+  eligible.forEach(p=>{
+    if(p.mgDays>0){state[p.id].lastMg=dateStr;state[p.id].mgFromSheet=false;lsSet('mg_'+p.id,dateStr);}
+    if(p.fDays>0){state[p.id].lastF=dateStr;state[p.id].fFromSheet=false;lsSet('f_'+p.id,dateStr);}
+  });
+  const d=new Date(dateStr);
+  const label=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  showToast(`✓ Fertilizer logged for ${eligible.length} plants on ${label}`);
   renderAll();
 }
 
