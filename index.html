@@ -175,6 +175,11 @@ const SHEET_DATES={
   daisies:{w:null,f:null,mg:null},
   coreopsis:{w:null,f:null,mg:null},
   catmint:{w:null,f:null,mg:null},
+  petiteknockout:{w:null,f:null,mg:null},
+  angelonia:{w:null,f:null,mg:null},
+  calibrachoa:{w:null,f:null,mg:null},
+  holysmokes:{w:null,f:null,mg:null},
+  blueberryparfait:{w:null,f:null,mg:null},
 };
 
 const plants=[
@@ -308,6 +313,31 @@ const plants=[
    fertType:"Light 10-10-10 — spring (prefers lean soil, don't over-feed)",bloom:'May–Sept',
    pruneWhen:"Shear flower spikes to base after first flush; divide clumps every 3–4 years in spring",
    deadhead:"Shear back hard after first major bloom flush to encourage continuous rebloom through fall"},
+  {id:'petiteknockout',name:'Petite Knockout Rose',loc:'Pot',wDays:2,fDays:30,mgDays:0,
+   fertType:'Rose Fertilizer — monthly (same as in-ground Knockouts)',bloom:'May–Frost',
+   pruneWhen:'Light shaping as needed; cut back by 1/3 in spring',
+   deadhead:'Deadhead spent blooms to keep it blooming; cut just above first 5-leaf set',
+   notes:'Keep consistently moist in pot — dries out faster than in-ground'},
+  {id:'angelonia',name:'Angelonia Archangel',loc:'Pot',wDays:2,fDays:0,mgDays:14,
+   fertType:'Miracle-Gro every 2 weeks (balanced liquid)',bloom:'Summer–Frost',
+   pruneWhen:'Pinch back lightly to encourage bushiness; no hard pruning needed',
+   deadhead:'Self-cleaning — no deadheading required',
+   notes:'Heat and drought tolerant; one of the easiest pot annuals'},
+  {id:'calibrachoa',name:'Superbells Double Love Swept Calibrachoa',loc:'Pot',wDays:1,fDays:0,mgDays:7,
+   fertType:'Miracle-Gro every 7 days — heavy feeder, needs weekly liquid feed to bloom well',bloom:'Spring–Frost',
+   pruneWhen:'Shear back by 1/3 in midsummer if it gets leggy — will rebound quickly',
+   deadhead:'Self-cleaning — no deadheading needed',
+   notes:'Very thirsty in pots — check daily in heat; yellow leaves = needs more fertilizer'},
+  {id:'holysmokes',name:"Holy Smokes! Petunia",loc:'Pot',wDays:2,fDays:0,mgDays:7,
+   fertType:'Miracle-Gro every 7 days — petunias are heavy feeders',bloom:'Spring–Frost',
+   pruneWhen:'Pinch or cut back by 1/3 in midsummer to rejuvenate and prevent legginess',
+   deadhead:'Deadhead spent blooms regularly to keep it tidy and blooming',
+   notes:'Dark velvety blooms; keep moist but well-drained'},
+  {id:'blueberryparfait',name:'Blueberry Parfait Dianthus',loc:'Pot',wDays:2,fDays:0,mgDays:14,
+   fertType:'Miracle-Gro every 2 weeks (balanced liquid)',bloom:'Spring–Fall',
+   pruneWhen:'Shear lightly after first bloom flush to encourage rebloom',
+   deadhead:'Remove spent flower heads to extend blooming season',
+   notes:'Dummen Orange variety — bicolor pink/purple blooms; prefers slightly alkaline soil; avoid overwatering'},
 ];
 
 function lsGet(k){return localStorage.getItem('garden_'+k);}
