@@ -82,6 +82,9 @@
   .tab-content{display:none}
   .tab-content.active{display:block}
   .arrow{font-size:18px;color:#aaa}
+  .date-row{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .date-row input[type=date]{padding:4px 8px;font-size:12px;border:1px solid #e5e5e0;border-radius:7px;background:#f9f9f6;color:#1a1a1a;font-family:inherit}
+  .date-row .btn{margin-top:0}
   .rain-loading{font-size:12px;color:#888;font-style:italic}
   /* Modal */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;padding:16px}
@@ -495,10 +498,25 @@ function buildCard(p){
   }
   det+=pruneBox+dhBox;
   if(p.bloom)det+=`<div class="task-row"><span class="task-label">Bloom time</span><span class="task-val">${p.bloom}</span></div>`;
-  det+=`<div style="margin-top:6px">`;
-  det+=`<button class="btn btn-primary" onclick="markDone('w','${p.id}',event)">Watered today</button>`;
-  if(p.fDays)det+=`<button class="btn" onclick="markDone('f','${p.id}',event)">Fertilized today</button>`;
-  if(p.mgDays)det+=`<button class="btn" onclick="markDone('mg','${p.id}',event)">Miracle-Gro today</button>`;
+  det+=`<div style="margin-top:8px;border-top:1px solid #f0f0ea;padding-top:8px">`;
+  det+=`<div class="date-row">
+    <button class="btn btn-primary btn-sm" onclick="markDone('w','${p.id}',event)">Watered today</button>
+    <span style="font-size:11px;color:#aaa">or pick date:</span>
+    <input type="date" value="${TODAY_STR}" id="dw-${p.id}" max="${TODAY_STR}" onclick="event.stopPropagation()" style="font-size:12px;padding:4px 6px;border:1px solid #e5e5e0;border-radius:7px;background:#f9f9f6;font-family:inherit">
+    <button class="btn btn-sm" onclick="setDate('w','${p.id}',event)">Set</button>
+  </div>`;
+  if(p.fDays)det+=`<div class="date-row">
+    <button class="btn btn-sm" onclick="markDone('f','${p.id}',event)">Fertilized today</button>
+    <span style="font-size:11px;color:#aaa">or pick date:</span>
+    <input type="date" value="${s.lastF||TODAY_STR}" id="df-${p.id}" max="${TODAY_STR}" onclick="event.stopPropagation()" style="font-size:12px;padding:4px 6px;border:1px solid #e5e5e0;border-radius:7px;background:#f9f9f6;font-family:inherit">
+    <button class="btn btn-sm" onclick="setDate('f','${p.id}',event)">Set</button>
+  </div>`;
+  if(p.mgDays)det+=`<div class="date-row">
+    <button class="btn btn-sm" onclick="markDone('mg','${p.id}',event)">Miracle-Gro today</button>
+    <span style="font-size:11px;color:#aaa">or pick date:</span>
+    <input type="date" value="${s.lastMg||TODAY_STR}" id="dmg-${p.id}" max="${TODAY_STR}" onclick="event.stopPropagation()" style="font-size:12px;padding:4px 6px;border:1px solid #e5e5e0;border-radius:7px;background:#f9f9f6;font-family:inherit">
+    <button class="btn btn-sm" onclick="setDate('mg','${p.id}',event)">Set</button>
+  </div>`;
   det+=`</div>`;
   det+=`</div>`;
 
@@ -614,7 +632,6 @@ function markDone(type,id,ev){
   else if(type==='f'){state[id].lastF=TODAY_STR;state[id].fFromSheet=false;lsSet('f_'+id,TODAY_STR);}
   else if(type==='mg'){state[id].lastMg=TODAY_STR;state[id].mgFromSheet=false;lsSet('mg_'+id,TODAY_STR);}
   renderAll();
-  // Reopen the card in whichever tab is currently active (avoids ID collision)
   setTimeout(()=>{
     const activeTab=document.querySelector('.tab-content.active');
     if(!activeTab)return;
@@ -622,6 +639,32 @@ function markDone(type,id,ev){
     if(!card)return;
     const exp=card.querySelector('.expand');
     const arr=card.querySelector('.arrow');
+    if(exp)exp.classList.add('open');
+    if(arr)arr.textContent='˅';
+  },10);
+}
+
+function setDate(type,id,ev){
+  ev&&ev.stopPropagation();
+  // Find the date input in the same card as the clicked Set button
+  const card=ev.target.closest('.card');
+  if(!card)return;
+  const prefix={w:'dw-',f:'df-',mg:'dmg-'}[type];
+  const inp=card.querySelector(`[id^="${prefix}"]`);
+  if(!inp||!inp.value)return;
+  const dateStr=inp.value; // yyyy-mm-dd
+  if(type==='w'){state[id].lastW=dateStr;state[id].wFromSheet=false;lsSet('w_'+id,dateStr);}
+  else if(type==='f'){state[id].lastF=dateStr;state[id].fFromSheet=false;lsSet('f_'+id,dateStr);}
+  else if(type==='mg'){state[id].lastMg=dateStr;state[id].mgFromSheet=false;lsSet('mg_'+id,dateStr);}
+  showToast(`Date saved: ${inp.value}`);
+  renderAll();
+  setTimeout(()=>{
+    const activeTab=document.querySelector('.tab-content.active');
+    if(!activeTab)return;
+    const c2=activeTab.querySelector(`.card[data-plant-id="${id}"]`);
+    if(!c2)return;
+    const exp=c2.querySelector('.expand');
+    const arr=c2.querySelector('.arrow');
     if(exp)exp.classList.add('open');
     if(arr)arr.textContent='˅';
   },10);
